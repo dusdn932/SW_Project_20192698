@@ -46,17 +46,17 @@ def draw_game_over_screen(winner):
     else:
         text = font.render("Black player wins!", True, (255, 255, 255))
 
-    restart_button_rect = Rect(400, 400, 200, 100)
+    game_finish_rect = Rect(400, 400, 200, 100)
 
 
     
     SURFACE.blit(text, (300, 300))
   
 
-    return restart_button_rect
+    return game_finish_rect
 
 def game_over_screen(winner):
-    restart_button_rect = draw_game_over_screen(winner)
+    game_finish_rect = draw_game_over_screen(winner)
     pygame.display.update()
 
     while True:
