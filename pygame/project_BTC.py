@@ -4,7 +4,7 @@ from math import floor
 from pygame.locals import QUIT, Rect, MOUSEBUTTONDOWN
 
 pygame.init()
-SURFACE = pygame.display.set_mode((1000,800))
+SURFACE = pygame.display.set_mode((1000,800), pygame.DOUBLEBUF)
 FPSCLOCK = pygame.time.Clock()
 
 white = []
@@ -14,41 +14,84 @@ chess_click = False
 dark_color = ((96,93,93))
 bright_color = (140,140,140)
 turn = 1
+n = 0
 piece_font = pygame.font.SysFont(None, 100)
+white_move = []
+black_move = []
+white_first_move = []
+black_first_move = []
+current_player = 'black'
 # 버튼과 UI에 사용될 색상 및 폰트
-button_color = (100, 100, 100)
-ui_color = (150, 150, 150)
+
+button_color = (0, 128, 255)  # 수정: 파란색
+ui_color = (255, 192, 203)  # 수정: 분홍색
 font = pygame.font.SysFont(None, 30)
 
 # UI에 표시할 텍스트 및 버튼의 크기 및 위치 설정
 text_buttons = [
-    {"text": "Button 1", "rect": Rect(800, 50, 150, 50)},
-    {"text": "Button 2", "rect": Rect(800, 700, 150, 50)},
+    {"text": "Continue", "rect": Rect(800, 700, 150, 50)},
 ]
 
 ui_elements = [
-    {"text": "UI Element 1", "rect": Rect(800, 350, 150, 50)},
-    {"text": "UI Element 2", "rect": Rect(800, 450, 150, 50)},
+    {"text": f"{n+1} turn ", "rect": Rect(800, 350, 150, 50)},
+    {"text": f"{current_player}", "rect": Rect(800, 450, 150, 50)},
 ]
 
+def draw_game_over_screen(winner):
+    SURFACE.fill((0, 0, 0))  # Black background
+    font = pygame.font.SysFont(None, 50)
+
+    if winner == 'white':
+        text = font.render("White player wins!", True, (255, 255, 255))
+    else:
+        text = font.render("Black player wins!", True, (255, 255, 255))
+
+    restart_button_rect = Rect(400, 400, 200, 100)
+
+
+    
+    SURFACE.blit(text, (300, 300))
+  
+
+    return restart_button_rect
+
+def game_over_screen(winner):
+    restart_button_rect = draw_game_over_screen(winner)
+    pygame.display.update()
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+ 
+        FPSCLOCK.tick(30)
+        
 def draw_button(text, rect):
-    pygame.draw.rect(SURFACE, button_color, rect)
+    pygame.draw.rect(SURFACE, button_color, rect)  # 수정된 부분: 버튼 색상 변경
     button_text = font.render(text, True, (255, 255, 255))
     SURFACE.blit(button_text, (rect.x + 10, rect.y + 10))
 
 def draw_ui_element(text, rect):
-    pygame.draw.rect(SURFACE, ui_color, rect)
+    pygame.draw.rect(SURFACE, ui_color, rect)  # 수정된 부분: UI 엘리먼트 색상 변경
     ui_text = font.render(text, True, (0, 0, 0))
     SURFACE.blit(ui_text, (rect.x + 10, rect.y + 10))
 
-# UI 및 버튼 그리기
 def draw_ui():
+    ui_elements[0]["text"] = f"{n+1} turn "  # 이 부분을 추가하여 실시간으로 업데이트
+    ui_elements[1]["text"] = f"{current_player}"
     for element in ui_elements:
-        draw_ui_element(element["text"], element["rect"])
+        text = font.render(element["text"], True, (0, 0, 0))
+        SURFACE.blit(text, (element["rect"].x + 10, element["rect"].y + 10))
+
 
     for button in text_buttons:
         draw_button(button["text"], button["rect"])
 
+def draw_screen():
+    draw_ui()
+    pygame.display.update()
+    
 class Chess_piece:
     def __init__(self, x, y, piece, team):
         self.x = x
@@ -68,7 +111,7 @@ class Chess_piece:
             if piece.x == new_x and piece.y == new_y:
                 piece.piece_remove()
                 break
-
+            
         self.x += mx
         self.y += my
 
@@ -77,6 +120,11 @@ class Chess_piece:
             white.remove(self)
         elif self in black:
             black.remove(self)
+
+    def return_to_previous_position(self, original_x, original_y):
+        self.x = original_x
+        self.y = original_y
+
         
     def draw(self):
         SURFACE.blit(self.image, (self.x*100+27, self.y*100+20))
@@ -100,9 +148,9 @@ class Chess_piece:
         # 삭제된 기물이 킹인지 확인하고 상대 팀의 승리 여부를 체크
         if self.piece == 'K':
             if self.team == 1:
-                print("흰색 킹이 제거되었습니다. 상대 팀(검은색)의 승리입니다.")
+                game_over_screen('black')
             else:
-                print("검은색 킹이 제거되었습니다. 상대 팀(흰색)의 승리입니다.")
+                game_over_screen('white')
 
 
 class Pawn(Chess_piece):
@@ -134,7 +182,7 @@ def paint(chess_click, list, selected_piece, checkmate_winner=None):
     global dark_color
     global bright_color
     SURFACE.fill(dark_color)
-
+    
     for x in range(8):
         for y in range(8):
             if x % 2 == 0 and y % 2 == 0:
@@ -161,7 +209,8 @@ def paint(chess_click, list, selected_piece, checkmate_winner=None):
         if cp.is_check():
             pygame.draw.rect(SURFACE, (255, 0, 0), Rect(cp.x * 100, cp.y * 100, 100, 100), 5)
 
-    pygame.display.update()
+    draw_screen()
+    pygame.display.flip()
 
     # 모든 위치에 대해 클릭 가능하도록 함
     if chess_click:
@@ -169,10 +218,12 @@ def paint(chess_click, list, selected_piece, checkmate_winner=None):
             for j in range(8):
                 pygame.draw.rect(SURFACE, (255, 255, 255), Rect(i * 100, j * 100, 100, 100), 1)
 
-
+    draw_screen()
 def game_init():
     global white
     global black
+
+
 
     for i in range(8):
         white.append(Pawn(i, 1, 1))
@@ -483,9 +534,14 @@ def movable(chess):
     return list
 def piece_move(chess, list, x, y):
     global chess_click
+    global white
+    global black
+    original_x, original_y = chess.x, chess.y
 
     for i in list[0]:
         if x == chess.x + i[0] and y == chess.y + i[1]:
+            print(f"{chess.piece} 이동 전 위치: ({chess.x}, {chess.y}), 팀: {'흰색' if chess.team == 1 else '검은색'}")
+            
             # 목적지에 기물이 있는지 확인
             destination_piece = None
             for piece in white + black:
@@ -495,16 +551,30 @@ def piece_move(chess, list, x, y):
 
             # 목적지가 비어있으면 기물을 이동
             if destination_piece is None:
+                if chess.team == 1:
+                    white_move.append(((original_x, original_y), (chess.x + i[0], chess.y + i[1])))
+                else:
+                    black_move.append(((original_x, original_y), (chess.x + i[0], chess.y + i[1])))
                 chess.move(i[0], i[1])
             else:
                 # 목적지의 기물을 제거하고 현재 기물을 이동
                 destination_piece.piece_remove()
+                if chess.team == 1:
+                    white_move.append(((original_x, original_y), (chess.x + i[0], chess.y + i[1])))
+                else:
+                    black_move.append(((original_x, original_y), (chess.x + i[0], chess.y + i[1])))
                 chess.move(i[0], i[1])
 
             if chess.piece == 'P':
                 chess.first = False
 
             chess_click = False
+            print(f"{chess.piece} 이동 후 위치: ({chess.x}, {chess.y}), 팀: {'흰색' if chess.team == 1 else '검은색'}")
+
+            # 선택한 기물을 이동 전 위치로 돌아감
+            chess.return_to_previous_position(original_x, original_y)
+            print(f"{chess.piece} 이동 전 위치로 복귀: ({chess.x}, {chess.y})")
+
             break  # 첫 번째 성공적인 이동 이후에 루프 탈출
 
 def draw_start_screen():
@@ -537,6 +607,10 @@ def start_screen():
 def main():
     global white
     global black
+    global n
+    global white_first_move
+    global black_first_move
+    global current_player
     list = ()
     global chess_click
     selected_piece = None  # 선택된 기물을 저장할 변수
@@ -551,16 +625,47 @@ def main():
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 xpos, ypos = floor(event.pos[0] / 100), floor(event.pos[1] / 100)
-
+                
                 # 버튼 클릭 확인
                 for button in text_buttons:
                     if button["rect"].collidepoint(event.pos):
-                        print(f"Button clicked: {button['text']}")
+                        # 흰색 기물의 첫 번째 이동 정보
+                        white_first_move = white_move[n]
 
-                # UI Element 클릭 확인
-                for element in ui_elements:
-                    if element["rect"].collidepoint(event.pos):
-                        print(f"UI Element clicked: {element['text']}")
+                        # 검은색 기물의 첫 번째 이동 정보
+                        black_first_move = black_move[n]
+
+                        # 이동 전 위치와 이동 후 위치 출력
+                        print("흰색 기물 이동 전 위치:", white_first_move[0])
+                        print("흰색 기물 이동 후 위치:", white_first_move[1])
+
+                        print("검은색 기물 이동 전 위치:", black_first_move[0])
+                        print("검은색 기물 이동 후 위치:", black_first_move[1])
+                        
+                        if((n+1) % 2 == 0):
+                            for piece in white:
+                                if piece.x == white_first_move[0][0] and piece.y == white_first_move[0][1]:
+                                    piece.move(white_first_move[1][0] - white_first_move[0][0],
+                                               white_first_move[1][1] - white_first_move[0][1])
+
+                            for piece in black:
+                                if piece.x == black_first_move[0][0] and piece.y == black_first_move[0][1]:
+                                    piece.move(black_first_move[1][0] - black_first_move[0][0],
+                                               black_first_move[1][1] - black_first_move[0][1])
+
+                            current_player = 'black'       
+                        else:
+                            for piece in black:
+                                if piece.x == black_first_move[0][0] and piece.y == black_first_move[0][1]:
+                                    piece.move(black_first_move[1][0] - black_first_move[0][0],
+                                               black_first_move[1][1] - black_first_move[0][1])
+                            for piece in white:
+                                if piece.x == white_first_move[0][0] and piece.y == white_first_move[0][1]:
+                                    piece.move(white_first_move[1][0] - white_first_move[0][0],
+                                               white_first_move[1][1] - white_first_move[0][1])
+                            current_player = 'white'
+
+                        n+= 1
 
                 # 이미 기물이 선택된 경우
                 if chess_click and selected_piece:
@@ -581,13 +686,10 @@ def main():
                             chess_click = True
                             break
 
-        
+        # 이벤트 처리 후에 화면 갱신
         paint(chess_click, list, selected_piece)
-        draw_ui()  # UI 그리기
-        pygame.display.update()
-        FPSCLOCK.tick(30)
+        draw_ui()
+        FPSCLOCK.tick(30)  # 초당 30프레임으로 제한
 
 if __name__ == "__main__":
     main()
-
-
