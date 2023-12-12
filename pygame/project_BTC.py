@@ -20,7 +20,7 @@ white_move = []
 black_move = []
 white_first_move = []
 black_first_move = []
-current_player = 'black'
+current_player = 'white'
 # 버튼과 UI에 사용될 색상 및 폰트
 
 button_color = (0, 128, 255)  # 수정: 파란색
@@ -78,7 +78,7 @@ def draw_ui_element(text, rect):
     SURFACE.blit(ui_text, (rect.x + 10, rect.y + 10))
 
 def draw_ui():
-    ui_elements[0]["text"] = f"{n+1} turn "  # 이 부분을 추가하여 실시간으로 업데이트
+    ui_elements[0]["text"] = f"{n} turn "  # 이 부분을 추가하여 실시간으로 업데이트
     ui_elements[1]["text"] = f"{current_player}"
     for element in ui_elements:
         text = font.render(element["text"], True, (0, 0, 0))
@@ -653,7 +653,7 @@ def main():
                                     piece.move(black_first_move[1][0] - black_first_move[0][0],
                                                black_first_move[1][1] - black_first_move[0][1])
 
-                            current_player = 'black'       
+                            current_player = 'white'       
                         else:
                             for piece in black:
                                 if piece.x == black_first_move[0][0] and piece.y == black_first_move[0][1]:
@@ -663,7 +663,7 @@ def main():
                                 if piece.x == white_first_move[0][0] and piece.y == white_first_move[0][1]:
                                     piece.move(white_first_move[1][0] - white_first_move[0][0],
                                                white_first_move[1][1] - white_first_move[0][1])
-                            current_player = 'white'
+                            current_player = 'black'
 
                         n+= 1
 
